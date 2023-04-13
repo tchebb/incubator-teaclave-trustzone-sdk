@@ -25,11 +25,16 @@ description = "TEE client API."
 edition = "2018"
 
 [dependencies]
-optee-teec-sys = { path = "optee-teec-sys" }
+optee-teec-sys = { path = "optee-teec-sys", default-features = false }
 optee-teec-macros = { path = "macros" }
 libc = "0.2"
 uuid = "0.7"
 hex = "0.3"
+
+[features]
+default = ["backend-optee"]
+backend-optee = ["optee-teec-sys/backend-optee"]
+backend-isee = ["optee-teec-sys/backend-isee"]
 
 [workspace]
 members = ['systest']

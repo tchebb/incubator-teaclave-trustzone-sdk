@@ -18,7 +18,7 @@
 use crate::{Param, ParamTypes};
 use optee_teec_sys as raw;
 use std::marker::PhantomData;
-use std::mem;
+use std::mem::MaybeUninit;
 
 /// This type defines the payload of either an open session operation or an
 /// invoke command operation. It is also used for cancellation of operations,
@@ -33,16 +33,18 @@ pub struct Operation<A, B, C, D> {
 
 impl<A: Param, B: Param, C: Param, D: Param> Operation<A, B, C, D> {
     pub fn new(started: u32, mut p0: A, mut p1: B, mut p2: C, mut p3: D) -> Operation<A, B, C, D> {
-        let mut raw_op: raw::TEEC_Operation = unsafe { mem::zeroed() };
-        raw_op.started = started;
-        raw_op.paramTypes = ParamTypes::new(
-            p0.param_type(),
-            p1.param_type(),
-            p2.param_type(),
-            p3.param_type(),
-        )
-        .into();
-        raw_op.params = [p0.into_raw(), p1.into_raw(), p2.into_raw(), p3.into_raw()];
+        let raw_op: raw::TEEC_Operation = raw::TEEC_Operation {
+            started,
+            paramTypes: ParamTypes::new(
+                p0.param_type(),
+                p1.param_type(),
+                p2.param_type(),
+                p3.param_type(),
+            )
+            .into(),
+            params: [p0.into_raw(), p1.into_raw(), p2.into_raw(), p3.into_raw()],
+            imp: MaybeUninit::uninit(),
+        };
         Operation {
             raw: raw_op,
             phantom0: PhantomData,

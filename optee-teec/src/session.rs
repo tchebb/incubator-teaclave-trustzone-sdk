@@ -17,8 +17,9 @@
 
 use libc;
 use optee_teec_sys as raw;
-use std::ptr;
 use std::marker;
+use std::mem::MaybeUninit;
+use std::ptr;
 
 use crate::Param;
 use crate::{Context, Error, Operation, Result, Uuid};
@@ -54,8 +55,7 @@ impl<'ctx> Session<'ctx> {
         operation: Option<&mut Operation<A, B, C, D>>,
     ) -> Result<Self> {
         let mut raw_session = raw::TEEC_Session {
-            ctx: context.as_mut_raw_ptr(),
-            session_id: 0,
+            imp: MaybeUninit::uninit(),
         };
         let mut err_origin: u32 = 0;
         let raw_operation = match operation {
@@ -72,7 +72,10 @@ impl<'ctx> Session<'ctx> {
                 raw_operation,
                 &mut err_origin,
             ) {
-                raw::TEEC_SUCCESS => Ok(Self { raw: raw_session,  _marker: marker::PhantomData }),
+                raw::TEEC_SUCCESS => Ok(Self {
+                    raw: raw_session,
+                    _marker: marker::PhantomData,
+                }),
                 code => Err(Error::from_raw_error(code)),
             }
         }

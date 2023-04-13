@@ -15,7 +15,9 @@
 // specific language governing permissions and limitations
 // under the License.
 
+use crate::imp;
 use libc::*;
+use std::mem::MaybeUninit;
 
 pub fn TEEC_PARAM_TYPES(p0:u32, p1:u32, p2:u32, p3:u32) -> u32 {
     let tmp = p1 << 4 | p2 << 8 | p3 << 12;
@@ -78,9 +80,7 @@ pub type TEEC_Result = u32;
 
 #[repr(C)]
 pub struct TEEC_Context {
-    pub fd: c_int,
-    pub reg_mem: bool,
-    pub memref_null: bool,
+    pub imp: MaybeUninit<imp::TEEC_Context_imp>,
 }
 
 #[repr(C)]
@@ -93,14 +93,7 @@ pub struct TEEC_UUID {
 
 #[repr(C)]
 pub struct TEEC_Session {
-    pub ctx: *mut TEEC_Context,
-    pub session_id: u32,
-}
-
-#[repr(C)]
-pub union SharedMemoryFlagsCompat {
-    dummy: bool,
-    flags: u8,
+    pub imp: MaybeUninit<imp::TEEC_Session_imp>,
 }
 
 #[repr(C)]
@@ -108,11 +101,7 @@ pub struct TEEC_SharedMemory {
     pub buffer: *mut c_void,
     pub size: size_t,
     pub flags: u32,
-    pub id: c_int,
-    pub alloced_size: size_t,
-    pub shadow_buffer: *mut c_void,
-    pub registered_fd: c_int,
-    pub internal: SharedMemoryFlagsCompat,
+    pub imp: MaybeUninit<imp::TEEC_SharedMemory_imp>,
 }
 
 #[derive(Copy, Clone)]
@@ -150,7 +139,7 @@ pub struct TEEC_Operation {
     pub started: u32,
     pub paramTypes: u32,
     pub params: [TEEC_Parameter; TEEC_CONFIG_PAYLOAD_REF_COUNT as usize],
-    pub session: *mut TEEC_Session,
+    pub imp: MaybeUninit<imp::TEEC_Operation_imp>,
 }
 
 extern "C" {

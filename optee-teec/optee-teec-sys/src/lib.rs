@@ -20,3 +20,12 @@
 pub use tee_client_api::*;
 
 mod tee_client_api;
+
+// Pull in `imp` field definitions, which differ in size and type depending on
+// the implementation we're building for. We need to know about them because
+// we're the ones allocating memory for all these structures.
+#[cfg(all(feature = "backend-optee", feature = "backend-isee"))]
+compile_error!("at most one backend can be enabled; did you forget to disable default features?");
+#[cfg_attr(feature = "backend-optee", path = "imps/optee.rs")]
+#[cfg_attr(feature = "backend-isee", path = "imps/isee.rs")]
+mod imp;

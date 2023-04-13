@@ -19,6 +19,7 @@ use crate::{Error, Operation, Result, Session, Uuid};
 use crate::{Param, ParamNone};
 use libc;
 use optee_teec_sys as raw;
+use std::mem::MaybeUninit;
 use std::ptr;
 
 /// An abstraction of the logical connection between a client application and a
@@ -36,7 +37,7 @@ impl Context {
     /// let ctx = Context::new().unwrap();
     /// ```
     pub fn new() -> Result<Context> {
-        Context::new_raw(0, true, false).map(|raw| Context { raw })
+        Context::new_raw().map(|raw| Context { raw })
     }
 
     /// Creates a raw TEE client context with implementation defined parameters.
@@ -46,11 +47,9 @@ impl Context {
     /// ```
     /// let raw_ctx: optee_teec_sys::TEEC_Context = Context::new_raw(0, true).unwrap();
     /// ```
-    pub fn new_raw(fd: libc::c_int, reg_mem: bool, memref_null: bool) -> Result<raw::TEEC_Context> {
+    pub fn new_raw() -> Result<raw::TEEC_Context> {
         let mut raw_ctx = raw::TEEC_Context {
-            fd,
-            reg_mem,
-            memref_null,
+            imp: MaybeUninit::uninit(),
         };
         unsafe {
             match raw::TEEC_InitializeContext(ptr::null_mut() as *mut libc::c_char, &mut raw_ctx) {
