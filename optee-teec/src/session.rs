@@ -43,7 +43,9 @@ pub enum ConnectionMethods {
 
 /// Represents a connection between a client application and a trusted application.
 pub struct Session<'ctx> {
-    raw: raw::TEEC_Session,
+    /// The C API object we're wrapping. We must heap-allocate it because some
+    /// implementations assume an object always has the same pointer value.
+    raw: *mut raw::TEEC_Session,
     _marker: marker::PhantomData<&'ctx mut Context>,
 }
 
@@ -54,9 +56,9 @@ impl<'ctx> Session<'ctx> {
         uuid: Uuid,
         operation: Option<&mut Operation<A, B, C, D>>,
     ) -> Result<Self> {
-        let mut raw_session = raw::TEEC_Session {
+        let raw_session = Box::into_raw(Box::new(raw::TEEC_Session {
             imp: MaybeUninit::uninit(),
-        };
+        }));
         let mut err_origin: u32 = 0;
         let raw_operation = match operation {
             Some(o) => o.as_mut_raw_ptr(),
@@ -65,7 +67,7 @@ impl<'ctx> Session<'ctx> {
         unsafe {
             match raw::TEEC_OpenSession(
                 context.as_mut_raw_ptr(),
-                &mut raw_session,
+                raw_session,
                 uuid.as_raw_ptr(),
                 ConnectionMethods::LoginPublic as u32,
                 ptr::null() as *const libc::c_void,
@@ -83,7 +85,7 @@ impl<'ctx> Session<'ctx> {
 
     /// Converts a TEE client context to a raw pointer.
     pub fn as_mut_raw_ptr(&mut self) -> *mut raw::TEEC_Session {
-        &mut self.raw
+        self.raw
     }
 
     /// Invokes a command with an operation with this session.
@@ -95,7 +97,7 @@ impl<'ctx> Session<'ctx> {
         let mut err_origin: u32 = 0;
         unsafe {
             match raw::TEEC_InvokeCommand(
-                &mut self.raw,
+                self.raw,
                 command_id,
                 operation.as_mut_raw_ptr(),
                 &mut err_origin,
@@ -110,7 +112,8 @@ impl<'ctx> Session<'ctx> {
 impl<'ctx> Drop for Session<'ctx> {
     fn drop(&mut self) {
         unsafe {
-            raw::TEEC_CloseSession(&mut self.raw);
+            raw::TEEC_CloseSession(self.raw);
+            drop(Box::from_raw(self.raw));
         }
     }
 }
