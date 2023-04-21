@@ -17,13 +17,14 @@
 
 [package]
 name = "optee-utee-sys"
-version = "0.2.0"
-authors = ["Teaclave Contributors <dev@teaclave.apache.org>"]
-license = "Apache-2.0"
-repository = "https://github.com/apache/incubator-teaclave-trustzone-sdk.git"
 description = "Native bindings to the libutee library."
 edition = "2018"
 links = "utee"
+
+version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
 
 [dependencies]
 libc = { path = "../../rust/libc", version = "=0.2.99" }
